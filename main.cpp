@@ -7,7 +7,7 @@
 AccelStepper stepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 
 const int STEPS_PER_REV = 200; // 1.8°/step
-int microstep = 1;             // déjalo en 1 por ahora
+int microstep = 1;             
 long home_steps = 0;           // "0 grados" en pasos
 
 long degToSteps(float deg) {
@@ -40,7 +40,7 @@ void handleCmd(String cmd) {
   }
 
   if (up.startsWith("GOTO ")) {
-    float deg = cmd.substring(5).toFloat();           // usa cmd original por si hay '-' o decimales
+    float deg = cmd.substring(5).toFloat();           
     long target = home_steps + degToSteps(deg);
     stepper.moveTo(target);
     Serial.print("OK GOTO "); Serial.print(deg);
