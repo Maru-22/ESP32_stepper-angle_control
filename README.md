@@ -29,6 +29,6 @@ Proyecto para controlar un motor NEMA17 con un ESP32 y un driver DRV8825/A4988.
 ## Comandos seriales
 
 - HOME
-- GOTO 90
-- MOVE 200
+- GOTO [insertar ángulos]
+- MOVE [insertar pasos]
 - POS?
