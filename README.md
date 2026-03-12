@@ -13,7 +13,6 @@ Proyecto para controlar un motor NEMA17 con un ESP32 y un driver DRV8825/A4988.
 - Fuente de 12V para el motor
 - VS Code + PlatformIO
 - Python 3 + pyserial
-- Tkinter para la GUI
 
 ## Pines usados
 
