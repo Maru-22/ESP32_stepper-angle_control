@@ -1,5 +1,5 @@
 # ESP32_stepper-angle_control
-Control por ángulos de un motor a pasos usando es32
+Control por ángulos de un motor a pasos usando esp32
 
 # ESP32 Stepper Angle Control
 
@@ -16,8 +16,8 @@ Proyecto para controlar un motor NEMA17 con un ESP32 y un driver DRV8825/A4988.
 
 ## Pines usados
 
-- DIR -> GPIO 27
-- STEP -> GPIO 26
+- DIR -> GPIO 4
+- STEP -> GPIO 5
 
 ## Conexiones importantes
 
