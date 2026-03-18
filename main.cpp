@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
 
-#define DIR_PIN 27
-#define STEP_PIN 26
+#define DIR_PIN 4
+#define STEP_PIN 5
 
 AccelStepper stepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 
 const int STEPS_PER_REV = 200; // 1.8°/step
-int microstep = 1;             
+int microstep = 1;             // déjalo en 1 por ahora
 long home_steps = 0;           // "0 grados" en pasos
 
 long degToSteps(float deg) {
@@ -40,7 +40,7 @@ void handleCmd(String cmd) {
   }
 
   if (up.startsWith("GOTO ")) {
-    float deg = cmd.substring(5).toFloat();           
+    float deg = cmd.substring(5).toFloat();           // usa cmd original por si hay '-' o decimales
     long target = home_steps + degToSteps(deg);
     stepper.moveTo(target);
     Serial.print("OK GOTO "); Serial.print(deg);
