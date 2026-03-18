@@ -7,7 +7,7 @@ Proyecto para controlar un motor NEMA17 con un ESP32 y un driver DRV8825/A4988.
 
 ## Requisitos
 
-- ESP32 DOIT DEVKIT V1
+- ESP32-S3 DEVKIT 
 - Driver DRV8825 o compatible
 - Motor paso a paso 1.8°/step
 - Fuente de 12V para el motor
