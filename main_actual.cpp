@@ -92,7 +92,7 @@ void handleCmd(String cmd) {
   }
 
   if (up == "RESET") {
-    home_steps = 0;  // 🔥 volver al cero absoluto
+    home_steps = 0;  //volver al cero absoluto
     Serial.println("OK RESET");
     return;
 }
