@@ -27,7 +27,7 @@ class AngleDial(tk.Canvas):
         self.r = size * 0.38
 
         self.display_angle = 0.0
-        self.zero_offset = 0.0  # 🔥 NUEVO
+        self.zero_offset = 0.0 
 
         self.callback = None
         self.grid_step = 10
@@ -52,10 +52,10 @@ class AngleDial(tk.Canvas):
         # guardar estado actual
         current_angle = self.display_angle
 
-        # 🔥 recalcular offset correctamente
+        # recalcular offset correctamente
         self.zero_offset = normalize_360(self.zero_offset + current_angle)
 
-        # 🔥 ahora este punto es el nuevo cero
+        # ahora este punto es el nuevo cero
         self.display_angle = 0.0
 
         self.draw_dial()
@@ -69,7 +69,7 @@ class AngleDial(tk.Canvas):
         ang = math.degrees(math.atan2(dy, dx))
         ang = normalize_360(ang)
 
-        # 🔥 corregir con offset
+        # corregir con offset
         logical_angle = normalize_360(ang - self.zero_offset)
 
         self.display_angle = logical_angle
@@ -293,10 +293,10 @@ class StepperGUI(tk.Tk):
         self.dial.reset_zero()
         self.angle_var.set("0")
 
-        # 🔥 primero resetear referencia en ESP32
+        # primero resetear referencia en ESP32
         self.send_command("RESET")
 
-        # 🔥 luego mover físicamente al cero real
+        # luego mover físicamente al cero real
         time.sleep(0.05)
         self.send_command("GOTO 0")
 
