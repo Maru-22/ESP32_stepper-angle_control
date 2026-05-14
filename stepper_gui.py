@@ -1,3 +1,7 @@
+# ==========================================
+# IMPORTS
+# ==========================================
+
 import math
 import time
 import tkinter as tk
@@ -6,8 +10,19 @@ from tkinter import ttk, messagebox
 import serial
 import serial.tools.list_ports
 
+# VELOCIDAD DE COMUNICACIÓN SERIAL
 BAUD = 115200
 
+# ==========================================
+# FUNCIONES AUXILIARES
+# ==========================================
+#
+# list_ports():
+#   Detecta puertos seriales disponibles
+#
+# normalize_360():
+#   Mantiene ángulos en rango [0,360)
+# ==========================================
 
 def list_ports():
     return [p.device for p in serial.tools.list_ports.comports()]
@@ -16,6 +31,24 @@ def list_ports():
 def normalize_360(angle_deg: float) -> float:
     return angle_deg % 360.0
 
+# ==========================================
+# DIAL ANGULAR
+# ==========================================
+#
+# Canvas circular interactivo que:
+#
+# - Dibuja grid angular
+# - Dibuja labels fijos cada 30°
+# - Maneja offset visual (HOME)
+# - Convierte clicks del mouse a ángulos
+# - Dibuja la flecha de posición
+#
+# display_angle:
+#   ángulo lógico actual
+#
+# zero_offset:
+#   rotación visual del sistema de referencia
+# ==========================================
 
 class AngleDial(tk.Canvas):
     def __init__(self, master, size=420, **kwargs):
@@ -27,7 +60,7 @@ class AngleDial(tk.Canvas):
         self.r = size * 0.38
 
         self.display_angle = 0.0
-        self.zero_offset = 0.0 
+        self.zero_offset = 0.0  
 
         self.callback = None
         self.grid_step = 10
@@ -48,17 +81,55 @@ class AngleDial(tk.Canvas):
         self.grid_step = step
         self.draw_dial()
 
+# ==========================================
+# REDEFINICIÓN DE CERO VISUAL
+# ==========================================
+#
+# HOME no mueve la flecha.
+#
+# En lugar de eso:
+# - rota el sistema de referencia
+# - el ángulo actual se vuelve 0°
+#
+# Esto modifica:
+#
+#   self.zero_offset
+#
+# manteniendo la continuidad visual.
+# ==========================================
+
     def set_zero_here(self):
         # guardar estado actual
         current_angle = self.display_angle
 
-        # recalcular offset correctamente
+        #recalcular offset 
         self.zero_offset = normalize_360(self.zero_offset + current_angle)
 
-        # ahora este punto es el nuevo cero
+        # nuevo cero
         self.display_angle = 0.0
 
         self.draw_dial()
+
+# ==========================================
+# CONVERSIÓN MOUSE -> ÁNGULO
+# ==========================================
+#
+# Esta función:
+#
+# 1) toma la posición del mouse
+# 2) calcula el ángulo respecto al centro
+# 3) aplica el offset visual (HOME)
+# 4) actualiza el dial
+# 5) envía el nuevo ángulo al sistema principal
+#
+# atan2(dy, dx):
+#   convierte coordenadas cartesianas a ángulo
+#
+# zero_offset:
+#   rota el sistema de referencia visual
+#   sin mover físicamente la flecha
+# ==========================================
+
     def on_mouse(self, event):
         dx = event.x - self.cx
         dy = self.cy - event.y
@@ -77,6 +148,27 @@ class AngleDial(tk.Canvas):
 
         if self.callback:
             self.callback(logical_angle)
+    
+# ==========================================
+# DIBUJO COMPLETO DEL DIAL
+# ==========================================
+#
+# Orden:
+#
+# 1) círculo base
+# 2) grid fino dinámico
+# 3) marcas principales fijas
+# 4) flecha angular
+# 5) texto de posición
+#
+# IMPORTANTE:
+# Todas las rotaciones visuales usan:
+#
+#   deg + self.zero_offset
+#
+# para que HOME rote el sistema de referencia
+# sin mover físicamente la flecha.
+# ==========================================
 
     def draw_dial(self):
         self.delete("all")
@@ -91,9 +183,7 @@ class AngleDial(tk.Canvas):
         step = self.grid_step
         label_step = 30
 
-        # =========================
-        # 1) GRID FINO (dinámico)
-        # =========================
+        # --------GRID FINO (dinámico)-----------------
         for deg in range(0, 360, step):
             rad = math.radians(deg + self.zero_offset)
 
@@ -106,9 +196,7 @@ class AngleDial(tk.Canvas):
             self.create_line(x1, y1, x2, y2, width=1)
 
 
-        # =========================
-        # 2) MARCAS + NÚMEROS (FIJOS)
-        # =========================
+        
         for deg in range(0, 360, label_step):
             rad = math.radians(deg + self.zero_offset)
 
@@ -156,6 +244,18 @@ class AngleDial(tk.Canvas):
         self.display_angle = 0.0
         self.draw_dial()
 
+# ==========================================
+# INTERFAZ PRINCIPAL
+# ==========================================
+#
+# Maneja:
+#
+# - GUI Tkinter
+# - Comunicación serial ESP32
+# - Botones de control
+# - Sincronización visual
+# - Movimiento angular
+# ==========================================
 
 class StepperGUI(tk.Tk):
     def __init__(self):
@@ -214,9 +314,14 @@ class StepperGUI(tk.Tk):
         angle_entry.pack(side="left", padx=6)
         angle_entry.bind("<Return>", lambda event: self.goto_angle())
 
+        #BOTONES DE FUNCIONES DE MOVIMIENTO 
+        
         ttk.Button(row1, text="Ir a ángulo", command=self.goto_angle).pack(side="left")
+        ttk.Button(row1, text="◀", command=self.step_plus).pack(side="left", padx=3)
+        ttk.Button(row1, text="▶", command=self.step_minus).pack(side="left", padx=3)
         ttk.Button(row1, text="HOME", command=self.send_home).pack(side="left")
-        ttk.Button(row1, text="RESET", command=self.reset_system).pack(side="left")
+        #Botón para resetear a posición incial en caso de un sistema de retroalimentación
+        #ttk.Button(row1, text="RESET", command=self.reset_system).pack(side="left")
 
         row2 = ttk.Frame(ctrl)
         row2.pack(fill="x", pady=5)
@@ -226,6 +331,13 @@ class StepperGUI(tk.Tk):
         combo.pack(side="left")
 
         self.grid_step.trace_add("write", self.on_grid_change)
+
+# ==========================================
+# ACTUALIZACIÓN DEL GRID VISUAL
+# ==========================================
+#
+# Se ejecuta automáticamente cuando cambia
+# el valor del selector de grid (1,2,5,10).
 
     def on_grid_change(self, *args):
         self.dial.set_grid(self.grid_step.get())
@@ -249,6 +361,18 @@ class StepperGUI(tk.Tk):
     def send_command(self, cmd):
         if self.ser and self.ser.is_open:
             self.ser.write((cmd + "\n").encode())
+
+# ==========================================
+# ENVÍO EN TIEMPO REAL
+# ==========================================
+#
+# Envía GOTO continuamente mientras
+# se arrastra el dial.
+#
+# min_send_interval:
+#   limita frecuencia serial para evitar
+#   saturar el ESP32.
+# ==========================================
 
     def maybe_send_angle(self, angle):
         if not self.realtime_enabled.get():
@@ -280,25 +404,62 @@ class StepperGUI(tk.Tk):
         except ValueError:
             messagebox.showerror("Error", "Ángulo inválido")
 
+    #AVANZAR CON GRID EN SENTIDO DE RELOJ
+
+    def step_plus(self):
+        try:
+            current = float(self.angle_var.get())
+            step = self.grid_step.get()
+
+            new_angle = normalize_360(current + step)
+
+            self.angle_var.set(f"{new_angle:.1f}")
+            self.dial.set_angle(new_angle)
+
+            self.send_command(f"GOTO {new_angle}")
+
+        except ValueError:
+            messagebox.showerror("Error", "Ángulo inválido")
+
+    #AVANZAR CON GRID EN SENTIDO CONTRA RELOJ
+
+    def step_minus(self):
+        try:
+            current = float(self.angle_var.get())
+            step = self.grid_step.get()
+
+            new_angle = normalize_360(current - step)
+
+            self.angle_var.set(f"{new_angle:.1f}")
+            self.dial.set_angle(new_angle)
+
+            self.send_command(f"GOTO {new_angle}")
+
+        except ValueError:
+            messagebox.showerror("Error", "Ángulo inválido")
+
+
     def send_home(self):
         self.send_command("HOME")
 
         # redefinir el cero en la posición actual
         self.dial.set_zero_here()
 
-        # actualizar UI (opcional)
+        # actualizar UI 
         self.angle_var.set("0")
 
-    def reset_system(self):
-        self.dial.reset_zero()
-        self.angle_var.set("0")
 
-        # primero resetear referencia en ESP32
-        self.send_command("RESET")
+#SISTEMA DE RESETEO DESHABILITADO TEMPORALMENTE 
+    #def reset_system(self):
+     #   self.dial.reset_zero()
+     #   self.angle_var.set("0")
+     #
+       # resetear referencia en ESP32
+     #   self.send_command("RESET")
 
-        # luego mover físicamente al cero real
-        time.sleep(0.05)
-        self.send_command("GOTO 0")
+        # mover físicamente al cero real
+     #   time.sleep(0.05)
+     #   self.send_command("GOTO 0")
 
 if __name__ == "__main__":
     app = StepperGUI()
